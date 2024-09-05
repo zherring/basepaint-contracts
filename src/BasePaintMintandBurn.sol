@@ -28,15 +28,17 @@ contract MintAndBurn is ERC1155Holder {
             if (burnAmount >= 2) {
                 try BURN_CONTRACT.safeTransferFrom(address(this), msg.sender, today, burnAmount, "") {
                     // Burning successful, user will receive burnAmount/2 new tokens from BURN_CONTRACT
+                    // Transfer any remainder tokens to the sender
+                    if (remainderAmount > 0) {
+                        IERC1155(address(CANVAS_CONTRACT)).safeTransferFrom(address(this), msg.sender, today, remainderAmount, "");
+                    }
                 } catch {
-                    // If burning fails, transfer burned amount back to the sender
-                    IERC1155(address(CANVAS_CONTRACT)).safeTransferFrom(address(this), msg.sender, today, burnAmount, "");
+                    // If burning fails, transfer all minted tokens back to the sender
+                    IERC1155(address(CANVAS_CONTRACT)).safeTransferFrom(address(this), msg.sender, today, amount, "");
                 }
-            }
-
-            // Transfer any remainder tokens to the sender
-            if (remainderAmount > 0) {
-                IERC1155(address(CANVAS_CONTRACT)).safeTransferFrom(address(this), msg.sender, today, remainderAmount, "");
+            } else {
+                // If burnAmount is less than 2, transfer all minted tokens to the sender
+                IERC1155(address(CANVAS_CONTRACT)).safeTransferFrom(address(this), msg.sender, today, amount, "");
             }
         } catch {
             // If minting fails, refund the sender
